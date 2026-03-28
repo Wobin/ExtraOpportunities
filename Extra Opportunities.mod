@@ -8,6 +8,6 @@ return {
 			mod_localization = "Extra Opportunities/scripts/mods/Extra Opportunities/Extra Opportunities_localization",
 		})
 	end,
-	version = "1.0",
+	version = "1.1",
 	packages = {},
 }

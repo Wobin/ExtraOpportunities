@@ -3,11 +3,11 @@ Title: Extra Opportunities
 Author: Wobin
 Date: 27/03/2026
 Repository: https://github.com/Wobin/ExtraOpportunities
-Version: 1.0
+Version: 1.1
 --]]
 -- Main mod table and state
 local mod = get_mod("Extra Opportunities")
-mod.version = "1.0"
+mod.version = "1.1"
 
 local traversal_polling = {}
 local completed_traversals = {}
@@ -15,7 +15,6 @@ local Managers = Managers
 local Unit = Unit
 local Vector3 = Vector3
 local Level  = Level
-local math_deg = math.deg
 
 -- Utility functions
 local function _lerp(a, b, t)
@@ -55,8 +54,8 @@ end
 -- Get color for player slot
 local function _get_player_slot_color(slot)
     if not slot or not color_lib then return _deep_copy_color(DEFAULT_OPPORTUNITY_COLOR) end
-    local color_func = color_lib["player_slot_" .. slot]
-    return color_func and color_func(255, true) or _deep_copy_color(DEFAULT_OPPORTUNITY_COLOR)
+    local ok, color_func = pcall(function() return color_lib["player_slot_" .. slot] end)
+    return ok and color_func and color_func(255, true) or _deep_copy_color(DEFAULT_OPPORTUNITY_COLOR)
 end
 
 -- Cache management
@@ -215,6 +214,9 @@ function mod.get_closest_traversal_target(compass_element)
 end
 
 mod:hook_require("scripts/ui/hud/elements/player_compass/hud_element_player_compass", function(HudElementPlayerCompass)
+	if mod._compass_hooked then return end
+	mod._compass_hooked = true
+
 	mod:hook(HudElementPlayerCompass, "_get_expedition_navigation_icons", function(func, self, dt, t, ui_renderer)
 		local icon_data = func(self, dt, t, ui_renderer)
 
