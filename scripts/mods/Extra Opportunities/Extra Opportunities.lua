@@ -1,13 +1,12 @@
 --[[
 Title: Extra Opportunities
 Author: Wobin
-Date: 27/03/2026
+Date: 24/06/2026
 Repository: https://github.com/Wobin/ExtraOpportunities
-Version: 1.1
+Version: 1.2.0
 --]]
--- Main mod table and state
 local mod = get_mod("Extra Opportunities")
-mod.version = "1.1"
+mod.version = "1.2.0"
 
 local traversal_polling = {}
 local completed_traversals = {}
@@ -15,8 +14,8 @@ local Managers = Managers
 local Unit = Unit
 local Vector3 = Vector3
 local Level  = Level
+local math_ceil = math.ceil
 
--- Utility functions
 local function _lerp(a, b, t)
     return a + (b - a) * t
 end
@@ -41,24 +40,20 @@ local function _resolve_position(position_data)
     return position_data
 end
 
--- Color and constants
 local color_lib = rawget(_G, "Color")
 local DEFAULT_OPPORTUNITY_COLOR = { 255, 114, 247, 119 }
 
--- Cache player info helpers
 local function _get_player_slot()
     local local_player = mod._local_player
     return local_player and local_player.slot and local_player:slot() or nil
 end
 
--- Get color for player slot
 local function _get_player_slot_color(slot)
     if not slot or not color_lib then return _deep_copy_color(DEFAULT_OPPORTUNITY_COLOR) end
     local ok, color_func = pcall(function() return color_lib["player_slot_" .. slot] end)
     return ok and color_func and color_func(255, true) or _deep_copy_color(DEFAULT_OPPORTUNITY_COLOR)
 end
 
--- Cache management
 local function _cache_player()
     mod._player_manager = Managers and Managers.player
     mod._local_player = mod._player_manager and mod._player_manager.local_player and mod._player_manager:local_player(1)
@@ -70,7 +65,6 @@ function mod.on_all_mods_loaded()
 end
 
 
--- Expedition and traversal helpers
 local function _get_expedition_objectives_handler()
     local game_mode_manager = Managers.state and Managers.state.game_mode
     local game_mode = game_mode_manager and game_mode_manager.game_mode and game_mode_manager:game_mode()
@@ -141,7 +135,6 @@ local function _poll_traversal_proximity(compass_element, opportunity_id, positi
         return
     end
     
-    -- Within distance, continue polling
     local poll = traversal_polling[opportunity_id] or { enter_time = nil }
     if not poll.enter_time then
         poll.enter_time = t
@@ -153,7 +146,6 @@ local function _poll_traversal_proximity(compass_element, opportunity_id, positi
     traversal_polling[opportunity_id] = poll
 end
 
--- Navigation and marker helpers
 local function _has_opportunity_marker(icon_data, opportunity_id)
     for i = 1, #icon_data do
         local existing = icon_data[i]
@@ -217,6 +209,16 @@ mod:hook_require("scripts/ui/hud/elements/player_compass/hud_element_player_comp
 	if mod._compass_hooked then return end
 	mod._compass_hooked = true
 
+	local UIRenderer = require("scripts/managers/ui/ui_renderer")
+	local UIFonts = require("scripts/managers/ui/ui_fonts")
+	local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
+	local star_font_type = UIFontSettings.hud_body.font_type
+	local star_text_options = UIFonts.get_font_options_by_style({
+		text_horizontal_alignment = "center",
+		text_vertical_alignment = "center",
+		drop_shadow = true,
+	}, {})
+
 	mod:hook(HudElementPlayerCompass, "_get_expedition_navigation_icons", function(func, self, dt, t, ui_renderer)
 		local icon_data = func(self, dt, t, ui_renderer)
 
@@ -267,6 +269,7 @@ mod:hook_require("scripts/ui/hud/elements/player_compass/hud_element_player_comp
 			at_opportunity = at_opportunity,
 			marked = closest_distance > 10,
 			opportunity_id = closest_opportunity_id,
+			extra_opportunities_marker = true,
 		}
 
 		table.sort(icon_data, function(a, b)
@@ -274,6 +277,44 @@ mod:hook_require("scripts/ui/hud/elements/player_compass/hud_element_player_comp
 		end)
 
 		return icon_data
+	end)
+
+	mod:hook(HudElementPlayerCompass, "_draw_compass_icon", function(func, self, dt, t, ui_renderer, icon_data, x, y, alpha, draw_layer)
+		if not (icon_data and icon_data.extra_opportunities_marker) then
+			return func(self, dt, t, ui_renderer, icon_data, x, y, alpha, draw_layer)
+		end
+
+		local text = icon_data.text
+		if text and text ~= "" then
+			local size = icon_data.size or { 20, 20 }
+			local box = icon_data.text_size or size
+			local scale = ui_renderer.scale or 1
+			local font_size = math_ceil((size[1] or 20) * scale)
+			local slot_color = icon_data.text_color or { 255, 255, 255, 255 }
+			local a = alpha or 255
+			local brighten = 0.5
+			local fill_color = {
+				a,
+				(slot_color[2] or 255) + (255 - (slot_color[2] or 255)) * brighten,
+				(slot_color[3] or 255) + (255 - (slot_color[3] or 255)) * brighten,
+				(slot_color[4] or 255) + (255 - (slot_color[4] or 255)) * brighten,
+			}
+			local outline_color = { a, 0, 0, 0 }
+			local center_x = x + (size[1] or 20) * 0.5
+			local center_y = y + (size[2] or 20) * 0.5
+			local base_x = center_x - box[1] * 0.5
+			local base_y = center_y - box[2] * 0.5
+			local o = font_size * 0.09 / scale
+			local offsets = { -o, -o, o, -o, -o, o, o, o, -o, 0, o, 0, 0, -o, 0, o }
+			for i = 1, #offsets, 2 do
+				local outline_position = { base_x + offsets[i], base_y + offsets[i + 1], draw_layer }
+				UIRenderer.draw_text(ui_renderer, text, font_size, star_font_type, outline_position, box, outline_color, star_text_options)
+			end
+			local text_position = { base_x, base_y, draw_layer + 1 }
+			UIRenderer.draw_text(ui_renderer, text, font_size, star_font_type, text_position, box, fill_color, star_text_options)
+		end
+
+		return draw_layer + 1
 	end)
 end)
 
