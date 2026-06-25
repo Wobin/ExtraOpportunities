@@ -8,7 +8,7 @@ return {
 			mod_localization = "Extra Opportunities/scripts/mods/Extra Opportunities/Extra Opportunities_localization",
 		})
 	end,
-	version = "1.2.0",
+	version = "1.2.1",
 	load_after = {
 		"Compass Range Finder",
 	},

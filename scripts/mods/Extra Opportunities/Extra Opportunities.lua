@@ -1,12 +1,12 @@
 --[[
 Title: Extra Opportunities
 Author: Wobin
-Date: 24/06/2026
+Date: 25/06/2026
 Repository: https://github.com/Wobin/ExtraOpportunities
-Version: 1.2.0
+Version: 1.2.1
 --]]
 local mod = get_mod("Extra Opportunities")
-mod.version = "1.2.0"
+mod.version = "1.2.1"
 
 local traversal_polling = {}
 local completed_traversals = {}
@@ -35,9 +35,10 @@ end
 
 local function _resolve_position(position_data)
     if not position_data then return nil end
+    if pcall(Vector3.length, position_data) then return position_data end
     local ok, unboxed = pcall(function() return position_data:unbox() end)
-    if ok and unboxed then return unboxed end
-    return position_data
+    if ok and unboxed and pcall(Vector3.length, unboxed) then return unboxed end
+    return nil
 end
 
 local color_lib = rawget(_G, "Color")
