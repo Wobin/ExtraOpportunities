@@ -3,10 +3,9 @@ Title: Extra Opportunities
 Author: Wobin
 Date: 25/06/2026
 Repository: https://github.com/Wobin/ExtraOpportunities
-Version: 1.2.1
 --]]
 local mod = get_mod("Extra Opportunities")
-mod.version = "1.2.1"
+mod.version = mod.get_metadata and mod:get_metadata("version") or "unknown"
 
 local traversal_polling = {}
 local completed_traversals = {}

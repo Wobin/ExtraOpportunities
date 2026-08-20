@@ -1,0 +1,17 @@
+{
+	"name": "Extra Opportunities",
+	"description": "Injects all registered expedition opportunities into the compass as secondary POIs and labels them alphabetically.",
+	"version": "1.2.1",
+	"author": "Wobin",
+	"homepage": "https://www.nexusmods.com/warhammer40kdarktide/mods/791",
+	"source": "https://github.com/Wobin/ExtraOpportunities",
+	"funding": {
+		"kofi": "https://ko-fi.com/wobin_dwonderdog"
+	},
+	"nexusId": "791",
+	"order": {
+		"require": [],
+		"this_after": [],
+		"this_before": []
+	}
+}
